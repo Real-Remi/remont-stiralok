@@ -41,6 +41,17 @@
   color-scheme:light;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+/* --- Скрыть полосы прокрутки везде (TWA/Chrome рисует их как браузер) --- */
+*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{width:0;height:0;display:none;background:transparent}
+html,body,.screen,#listSheet,#partSheet,#catSheet,#sheet,#pickSheet,#selectSheet{
+  scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar,.screen::-webkit-scrollbar,
+#listSheet::-webkit-scrollbar,#partSheet::-webkit-scrollbar,#catSheet::-webkit-scrollbar,
+#sheet::-webkit-scrollbar,#pickSheet::-webkit-scrollbar,#selectSheet::-webkit-scrollbar{
+  width:0;height:0;display:none;background:transparent}
+
 [hidden]{display:none!important}
 html,body{height:100%}
 body{
@@ -385,7 +396,6 @@ h1 span{color:var(--amber)}
 #overlay{position:absolute;inset:0;background:var(--scrim);opacity:0;visibility:hidden;
   transition:opacity .28s ease,visibility .28s;z-index:40;backdrop-filter:blur(6px)}
 #overlay.show{opacity:1;visibility:visible}
-/* скрытая модалка — уменьшена, прозрачна и чуть выше центра; открытая — пружинно вырастает ровно по центру */
 #listSheet,#partSheet,#catSheet,#sheet,#pickSheet,#selectSheet{position:absolute;left:14px;right:14px;top:50%;bottom:auto;max-height:86%;overflow-y:auto;
   background:var(--panel);border-radius:22px;
   border:1px solid var(--line);opacity:0;visibility:hidden;z-index:50;
@@ -400,11 +410,9 @@ h1 span{color:var(--amber)}
 .sheet-head{display:flex;align-items:center;gap:10px;margin-bottom:15px}
 .sheet-head h2{font-size:15px;flex:1;min-width:0}
 #listSheet .sheet-head{margin-bottom:13px}
-/* модалка выбора — чуть компактнее, всегда поверх остальных */
 #selectSheet{max-height:70%;z-index:70;
   padding:12px 10px calc(12px + env(safe-area-inset-bottom));
   box-shadow:0 30px 80px rgba(0,0,0,.55)}
-/* когда открыт список выбора — окно под ним (ремонт/запчасть) замылено */
 #app.sel-blur #sheet.open,#app.sel-blur #partSheet.open,#app.sel-blur #catSheet.open,
 #app.sel-blur #listSheet.open,#app.sel-blur #pickSheet.open{
   filter:blur(7px) brightness(.78) saturate(.9);pointer-events:none;user-select:none}
@@ -556,7 +564,6 @@ body,#appHeader,#tabbar,.card,.stat,
         <div class="t-row"><span>Всего потрачено на запчасти</span><b id="totalParts" class="mono">0 ₽</b></div>
         <div class="t-row big"><span>Итого чистыми</span><b id="totalNet" class="mono">0 ₽</b></div>
       </div>
-      <!-- АНАЛИТИКА: график + средний чек + топ брендов -->
       <div class="card chart-card">
         <div class="chart-head">
           <button class="icon-btn sm" id="chartPrev" aria-label="Предыдущий месяц">
@@ -822,7 +829,6 @@ body,#appHeader,#tabbar,.card,.stat,
     <div id="pickList"></div>
   </div>
 
-  <!-- ШТОРКА: КРАСИВЫЙ ВЫБОР ИЗ СПИСКА -->
   <div id="selectSheet">
     <div class="sheet-head">
       <h2 id="selectTitle">Выбор</h2>
@@ -891,26 +897,18 @@ function fmtDateNew(iso){
 }
 function yandexRouteUrl(address,lat,lon){
   if(lat!==undefined&&lon!==undefined&&lat!==null&&lon!==null&&String(lat).length>0){
-    /* маршрут от текущего местоположения до точки: приложение Яндекс.Карты строит по координатам */
     return "yandexmaps://maps.yandex.ru/?rtext=~"+String(lat)+","+String(lon)+"&rtt=auto";
   }
   return "yandexmaps://maps.yandex.ru/?rtext=~"+encodeURIComponent(address||"")+"&rtt=auto";
 }
-/* очистить адрес от служебных слов и уточнений квартиры/подъезда/этажа */
 function smaCleanAddr(s){
   s=String(s||'').replace(/ +/g,' ').trim();
-  // сокращения: ул., д., с., просп., ... (кириллический boundary)
     s=s.replace(/(?:^|[^A-Za-zА-Яа-яЁё0-9])(ул|пер|пр|просп|пл|ш|наб|д|с)[.]?(?:[ ,.;:]+|$)/gi,' ');
-  // служебные блоки: кв. 143, «6 под. 4», «4 этаж»
   s=s.replace(/,?[ ]*[0-9]*[ ]*(?:кв|кварит(?:а|ы)?|под(?!ъ)|подъезд|этаж(?:а|ей)?|эт|офис(?:а|ы)?|пом(?:ещение)?)[.]?[ ]*[0-9]*[ ]*/gi,' ');
-  // «2- я» -> «2-я»
   s=s.replace(/([0-9])[ ]*[-][ ]*([а-яё])/gi,'$1-$2');
-  // точки-границы -> запятая («Таганрог. ...» -> «Таганрог, ...»)
   s=s.replace(/[ ]*[.][ ]*/,', ');
-  // collapse
   s=s.replace(/ +/g,' ').replace(/ *, */g,', ').replace(/,+/g,',');
   s=s.replace(/^[ ,.]+/,'').replace(/[ ,.]+$/,'');
-  // страховка: хвост с кв/под
   s=s.replace(/,?[ ]*(кв|кварит|под|этаж|эт|офис|пом).*$/gi,'');
   return s;
 }
@@ -921,7 +919,6 @@ function smaGeoQueries(addr){
   qs.push(base);
   if(!hasCity){ qs.push(base+', Таганрог, Ростовская область'); }
   if(/покровское/.test(low)){ qs.push(base+', Неклиновский район, Ростовская область'); }
-  // street/dom variants «улица <street>, <dom>»
   var btoks=base.split(/[ ,]+/).filter(Boolean);
   var j=btoks.length-1, dom='';
   while(j>=0 && /^[0-9/]+$/.test(btoks[j])){ dom=btoks[j]+' '+dom; j--; }
@@ -933,12 +930,10 @@ function smaGeoQueries(addr){
     qs.push('Таганрог, улица '+street+', '+dom);
     qs.push('Таганрог, '+street+' улица, '+dom);
   }
-  // ориентир-токен (последний НЕ-числовой токен) в контексте региона
   var parts=base.split(/[ ,]+/);
   var orientir=null;
   for(var k=parts.length-1;k>=0;k--){ if(!/^[0-9/]+$/.test(parts[k])){ orientir=parts[k]; break; } }
     if(orientir && (!hasCity || /^таганрог/i.test(base))){ var c='Таганрог, Ростовская область, '+orientir; if(qs.indexOf(c)<0){ qs.push(c); } }
-  // dedup
   var seen={}, res=[];
   for(var s of qs){ var t=(s||'').trim(); if(t && !seen[t]){ seen[t]=1; res.push(t); } }
   return res;
@@ -958,9 +953,6 @@ function smaGeoWithin(lat,lon){
   var la=+lat, lo=+lon; if(isNaN(la)||isNaN(lo))return false;
   return la>=46.8 && la<=47.7 && lo>=38.2 && lo<=39.5;
 }
-/* Открыть маршрут в приложении Яндекс.Карты: сначала геокодируем адрес
-   в координаты, затем строим маршрут от текущего местоположения до точки
-   (yandexmaps:// , rtext=~lat,lon). Координаты — приложение строит гарантированно. */
 function openYandexRoute(address){
   address=String(address||"").trim();
   if(!address)return;
@@ -971,7 +963,7 @@ function openYandexRoute(address){
     smaGeoFetch(qs[idx],function(lat,lon){
       if(lat&&lon){
         if(smaGeoWithin(lat,lon)){ window.location.href=yandexRouteUrl(address,lat,lon); }
-        else{ attempt(idx+1); } // точка вне региона — пробуем другой вариант запроса
+        else{ attempt(idx+1); }
       }else{ attempt(idx+1); }
     });
   }
@@ -1050,7 +1042,7 @@ function syncOverlay(){overlay.classList.toggle("show",anySheetOpen());
   var app=document.getElementById("app");
   if(app)app.classList.toggle("sel-blur",selectSheet.classList.contains("open"));}
 
-/* ---------- системный "назад" (жест / кнопка Android) ---------- */
+/* ---------- системный "назад" ---------- */
 var navStack=[];
 function navDepth(){var m=(location.hash||"").match(/^#\/?(\d+)$/);return m?+m[1]:0}
 function pushNav(e){navStack.push(e);location.hash="#/"+navStack.length}
@@ -1664,7 +1656,7 @@ $("pickList").addEventListener("click",function(e){
 });
 $("pickClose").onclick=function(){closeAny(pickSheet)};
 
-/* ---------- доход: аналитика (график + топ) ---------- */
+/* ---------- доход: аналитика ---------- */
 var chartMonth=todayISO().slice(0,7);
 var topMode="money";
 function monthKeyShift(key,delta){
