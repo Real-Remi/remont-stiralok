@@ -1,5 +1,5 @@
 /* Service Worker: оффлайн-кэш приложения "Ремонт стиралок" */
-var VERSION = "sma-v3";
+var VERSION = "sma-v4";
 var CACHE = VERSION + "-cache";
 var ASSETS = [
   "./index.html",
